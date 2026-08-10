@@ -1,0 +1,456 @@
+{
+  "title": "Example Videos",
+  "description": "10 categories. Each category has 4 rows: video+audio+image+text, video+image+text, audio+image+text, and image+text.",
+  "categories": [
+    {
+      "id": "beauty",
+      "name": "Beauty & Fashion",
+      "orientation": "portrait",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/beauty/beauty_06.mp4",
+        "image": "demo_io/demo_example/demo_original/beauty/beauty_06.jpg",
+        "audio": "demo_io/demo_example/demo_original/beauty/beauty_06.mp3",
+        "text": "A close-up night skincare routine with gentle hand motions and soft indoor ambience."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/beauty/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/beauty/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/beauty/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/beauty/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/beauty/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/beauty/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/beauty/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/beauty/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "car",
+      "name": "Automotive",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/car/car_01.mp4",
+        "image": "demo_io/demo_example/demo_original/car/car_01.jpg",
+        "audio": "demo_io/demo_example/demo_original/car/car_01.mp3",
+        "text": "A sports car driving clip with prominent engine sound and fast outdoor motion."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/car/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/car/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/car/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/car/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/car/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/car/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/car/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/car/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "food",
+      "name": "Food",
+      "orientation": "portrait",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/food/food_02.mp4",
+        "image": "demo_io/demo_example/demo_original/food/food_02.jpg",
+        "audio": "demo_io/demo_example/demo_original/food/food_02.mp3",
+        "text": "A dessert preparation clip showing fruit, sago, and frozen yogurt being mixed."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/food/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/food/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/food/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/food/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/food/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/food/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/food/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/food/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "knowledge",
+      "name": "Knowledge",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/knowledge/konwledge_11.mp4",
+        "image": "demo_io/demo_example/demo_original/knowledge/konwledge_11.jpg",
+        "audio": "demo_io/demo_example/demo_original/knowledge/konwledge_11.mp3",
+        "text": "A classroom science demonstration uses light reflection and vibration to make sound visible."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/knowledge/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/knowledge/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/knowledge/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/knowledge/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/knowledge/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/knowledge/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/knowledge/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/knowledge/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "live",
+      "name": "Life",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/live/live_02.mp4",
+        "image": "demo_io/demo_example/demo_original/live/live_02.jpg",
+        "audio": "demo_io/demo_example/demo_original/live/live_02.mp3",
+        "text": "A city-life clip with ambient street sound and quiet everyday movement."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/live/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/live/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/live/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/live/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/live/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/live/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/live/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/live/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pet",
+      "name": "Pets",
+      "orientation": "portrait",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/pet/pet_14.mp4",
+        "image": "demo_io/demo_example/demo_original/pet/pet_14.jpg",
+        "audio": "demo_io/demo_example/demo_original/pet/pet_14.mp3",
+        "text": "A close-up pet video with playful movement and natural indoor sound."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/pet/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/pet/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/pet/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/pet/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/pet/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/pet/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/pet/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/pet/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "scene",
+      "name": "Scenery",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/scene/scene_17.mp4",
+        "image": "demo_io/demo_example/demo_original/scene/scene_17.jpg",
+        "audio": "demo_io/demo_example/demo_original/scene/scene_17.MP3",
+        "text": "A scenery video with ambient urban sound and cinematic movement."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/scene/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/scene/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/scene/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/scene/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/scene/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/scene/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/scene/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/scene/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "skill",
+      "name": "Skills",
+      "orientation": "portrait",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/skill/skill_02.mp4",
+        "image": "demo_io/demo_example/demo_original/skill/skill_02.jpg",
+        "audio": "demo_io/demo_example/demo_original/skill/skill_02.MP3",
+        "text": "A first-person downhill ride with original environmental sound and rapid motion."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/skill/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/skill/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/skill/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/skill/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/skill/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/skill/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/skill/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/skill/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sport",
+      "name": "Sports",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/sport/sport_02.mp4",
+        "image": "demo_io/demo_example/demo_original/sport/sport_02.jpg",
+        "audio": "demo_io/demo_example/demo_original/sport/sport_02.mp3",
+        "text": "A running video with outdoor scenery, steady footsteps, and natural ambience."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/sport/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/sport/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/sport/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/sport/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/sport/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/sport/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/sport/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/sport/vocal.mp4"
+          }
+        }
+      ]
+    },
+    {
+      "id": "technology",
+      "name": "Technology",
+      "orientation": "landscape",
+      "original": {
+        "video": "demo_io/demo_example/demo_original/technology/technology_10.mp4",
+        "image": "demo_io/demo_example/demo_original/technology/technology_10.jpg",
+        "audio": "demo_io/demo_example/demo_original/technology/technology_10.MP3",
+        "text": "A technology demonstration showing a remote interaction system in an indoor environment."
+      },
+      "rows": [
+        {
+          "type": "video_audio_image_text",
+          "label": "Video + Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_full_scene/technology/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_full_scene/technology/vocal.mp4"
+          }
+        },
+        {
+          "type": "audio_image_text",
+          "label": "Audio + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_video/technology/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_video/technology/vocal.mp4"
+          }
+        },
+        {
+          "type": "video_image_text",
+          "label": "Video + Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio/technology/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio/technology/vocal.mp4"
+          }
+        },
+        {
+          "type": "image_text",
+          "label": "Image + Text",
+          "output": {
+            "bgm": "demo_io/demo_example/demo_missing_audio_video/technology/bgm.mp4",
+            "vocal": "demo_io/demo_example/demo_missing_audio_video/technology/vocal.mp4"
+          }
+        }
+      ]
+    }
+  ]
+}
