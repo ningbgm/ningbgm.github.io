@@ -1,0 +1,27 @@
+# Generated publication copies (rebuild with scripts/build-site.mjs)
+/site-preview/
+/site-preview-*/
+
+# Local UI review screenshots, backups, and design references
+/.ui-review/
+/Image/
+
+# Raw captions are not used by the page or publication build
+/demo_io/demo_example/demo_original/**/*.txt
+
+# Local dependencies and browser test output
+node_modules/
+/playwright-report/
+/test-results/
+
+# Local environment settings (keep shareable examples)
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Logs and operating system files
+*.log
+.DS_Store
+Thumbs.db
+Desktop.ini

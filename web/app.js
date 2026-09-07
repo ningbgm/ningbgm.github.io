@@ -1,6 +1,8 @@
 const EXAMPLE_MP4_URL = new URL("./data/example_mp4.json", import.meta.url).href;
 
 const ROW_CASES = ["1", "2", "3", "4", "5"];
+// Measured source proportions reserve space before lazy videos load.
+const CASE_ASPECT_RATIOS = { "1": 3 / 4, "2": 1, "3": 3 / 4, "4": 3 / 4, "5": 3 / 4 };
 const COL_MODELS = [
   "GroundTruth",
   "Ours",
@@ -12,10 +14,11 @@ const COL_MODELS = [
   "VidMuse",
 ];
 const MODEL_LABELS = {
+  GroundTruth: "Ground truth",
+  Ours: "NingBGM (Ours)",
   Diff_bgm: "Diff-BGM",
   M2UGen: "M2UGen",
 };
-const SEPARATOR_COL_INDICES = [0];
 const SPECIAL_FILE_MAP = {
   Ours: {
     "1": "1_bgm.mp4",
@@ -31,7 +34,13 @@ const ROW_ORDER = [
   "audio_image_text",
   "image_text",
 ];
-const EXAMPLES_BATCH_SIZE = 2;
+const CONDITION_LABELS = {
+  video_audio_image_text: { title: "All modalities", modalities: ["Video", "Audio", "Image", "Text"] },
+  video_image_text: { title: "Without audio", modalities: ["Video", "Image", "Text"] },
+  audio_image_text: { title: "Without video", modalities: ["Audio", "Image", "Text"] },
+  image_text: { title: "Image and text", modalities: ["Image", "Text"] },
+};
+const EXAMPLES_BATCH_SIZE = 10;
 const MAX_CONCURRENT_PREFETCH = 2;
 
 const PLACEHOLDER_LABELS = {
@@ -190,7 +199,10 @@ function prefetchSingleVideo(src) {
     muted: "",
   });
 
+  let settled = false;
   const cleanup = () => {
+    if (settled) return;
+    settled = true;
     if (!loadedVideoUrls.has(src)) loadedVideoUrls.add(src);
     prefetchVideo.src = "";
     prefetchVideo.remove();
@@ -239,9 +251,10 @@ function getSharedVideoObserver() {
   return sharedVideoObserver;
 }
 
-function createVideoElement(src) {
+function createVideoElement(src, poster) {
   return el("video", {
     src: resolveMediaSrc(src),
+    poster: poster ? resolveMediaSrc(poster) : undefined,
     preload: "metadata",
     playsinline: "",
     "webkit-playsinline": "",
@@ -269,7 +282,6 @@ function setupVideoEvents(video, wrapper, src) {
     pauseOtherMedia(video);
     if (video.readyState < 2) video.preload = "auto";
     enqueueVideoPrefetch(src);
-    enqueueAllVideosInOrder();
     updateState();
   });
   video.addEventListener("pause", updateState);
@@ -288,20 +300,18 @@ function mediaNode(src, label, isSimple = false, options = {}) {
     class: "grid-video-wrap lazy-video",
     "aria-busy": "true",
   });
-  const loadingIndicator = createLoadingIndicator(label);
+  const loadingIndicator = createLoadingIndicator("video");
 
   wrapper.appendChild(loadingIndicator);
   wrapper.title = label;
 
-  if (options.syncAspectRatio) {
-    wrapper.style.aspectRatio = "16 / 9";
-  }
+  wrapper.style.setProperty("--media-ratio", String(options.aspectRatio || 16 / 9));
 
   const mountVideo = () => {
     if (wrapper.querySelector("video")) return;
 
     const resolved = resolveMediaSrc(src);
-    const video = createVideoElement(src);
+    const video = createVideoElement(src, options.poster);
     video.setAttribute("aria-label", label);
     let loadingSettled = false;
     let errorShown = false;
@@ -338,17 +348,11 @@ function mediaNode(src, label, isSimple = false, options = {}) {
     allVideos.push(video);
     loadedVideoUrls.add(resolved);
 
-    if (options.syncAspectRatio) {
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          if (video.videoWidth && video.videoHeight) {
-            wrapper.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
-          }
-        },
-        { once: true }
-      );
-    }
+    video.addEventListener("loadedmetadata", () => {
+      if (video.videoWidth && video.videoHeight) {
+        wrapper.style.setProperty("--media-ratio", String(video.videoWidth / video.videoHeight));
+      }
+    }, { once: true });
 
     setupVideoEvents(video, wrapper, src);
   };
@@ -373,56 +377,85 @@ function renderCompareMatrix(container) {
   container.appendChild(
     el("div", { class: "section-head" }, [
       el("h2", { class: "page-title", text: "Video-to-Music Generation" }),
-      el("h4", {
-        class: "section-kicker",
-        text: "Comparison with Other Methods",
-      }),
-      el("p", {
-        class: "page-subtitle",
-        text: "Each row uses the same source case so the methods can be reviewed in a stable, aligned comparison.",
-      }),
+      el("p", { class: "page-subtitle", text: "Comparison with other methods" }),
     ])
   );
 
-  const tableScroll = el("div", { class: "table-scroll" });
-  const table = el("table", { class: "comparison-table" });
-  table.appendChild(
-    el("caption", {
-      text: "Five cases compared across Ground Truth, NingBGM, and six baseline methods.",
-    })
-  );
-
-  const headerRow = el("tr");
-  headerRow.appendChild(el("th", { class: "case-head", scope: "col", text: "Case" }));
-  COL_MODELS.forEach((model) => {
-    const header = el("th", {
-      scope: "col",
-      text: MODEL_LABELS[model] || model,
-    });
-    if (model === "Ours") header.classList.add("method-ours");
-    headerRow.appendChild(header);
-  });
-  table.appendChild(el("thead", {}, [headerRow]));
-
-  const body = el("tbody");
+  const results = el("div", { id: "comparison-results" });
   ROW_CASES.forEach((caseId) => {
-    const row = el("tr");
-    row.appendChild(el("th", { class: "case-label", scope: "row", text: `Case ${caseId}` }));
-    COL_MODELS.forEach((model) => {
-      const cell = el("td", { class: "compare-cell" });
-      cell.appendChild(
-        mediaNode(getCompareVideoPath(model, caseId), MODEL_LABELS[model] || model, true, {
-          syncAspectRatio: true,
-        })
-      );
-      row.appendChild(cell);
+    const panel = el("section", {
+      class: "comparison-case", id: `comparison-case-${caseId}`,
+      "data-case": caseId, role: "tabpanel",
+      "aria-labelledby": `case-tab-${caseId}`, tabindex: "0",
     });
-    body.appendChild(row);
+    panel.hidden = caseId !== ROW_CASES[0];
+    const title = el("h3", { class: "case-title", text: `Case ${caseId}` });
+    title.hidden = true;
+    panel.appendChild(title);
+    panel.appendChild(el("div", { class: "method-grid" }, COL_MODELS.map((model) => {
+      const label = MODEL_LABELS[model] || model;
+      return el("figure", {
+        class: `method-result compare-cell${model === "Ours" ? " method-ours" : ""}`,
+        "data-model": model,
+      }, [
+        el("figcaption", { text: label }),
+        mediaNode(getCompareVideoPath(model, caseId), `Case ${caseId}: ${label}`, true, {
+          poster: `web/posters/case-${caseId}.jpg`,
+          aspectRatio: CASE_ASPECT_RATIOS[caseId],
+        }),
+      ]);
+    })));
+    results.appendChild(panel);
   });
 
-  table.appendChild(body);
-  tableScroll.appendChild(table);
-  container.appendChild(tableScroll);
+  let selectedCase = ROW_CASES[0];
+  const tabs = el("div", { class: "case-tabs", role: "tablist", "aria-label": "Comparison case" });
+  const allCases = el("input", { type: "checkbox", id: "allCases" });
+  const updateCases = () => {
+    pauseOtherMedia(null);
+    results.querySelectorAll(".comparison-case").forEach((panel) => {
+      panel.hidden = !allCases.checked && panel.dataset.case !== selectedCase;
+      panel.querySelector(".case-title").hidden = !allCases.checked;
+      panel.setAttribute("role", allCases.checked ? "region" : "tabpanel");
+      panel.setAttribute("aria-label", `Case ${panel.dataset.case}`);
+      if (allCases.checked) panel.removeAttribute("aria-labelledby");
+      else panel.setAttribute("aria-labelledby", `case-tab-${panel.dataset.case}`);
+    });
+    tabs.hidden = allCases.checked;
+    tabs.querySelectorAll("button").forEach((button) => {
+      const selected = button.dataset.case === selectedCase;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    window.requestAnimationFrame(syncCompareCellSizeToCssVars);
+  };
+  ROW_CASES.forEach((caseId, index) => {
+    tabs.appendChild(el("button", {
+      type: "button", role: "tab", text: `Case ${caseId}`, "data-case": caseId,
+      id: `case-tab-${caseId}`,
+      "aria-selected": String(index === 0),
+      "aria-controls": `comparison-case-${caseId}`,
+      tabindex: index === 0 ? "0" : "-1",
+      onclick: () => { selectedCase = caseId; updateCases(); },
+      onkeydown: (event) => {
+        let next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % ROW_CASES.length;
+        else if (event.key === "ArrowLeft") next = (index + ROW_CASES.length - 1) % ROW_CASES.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = ROW_CASES.length - 1;
+        else return;
+        event.preventDefault();
+        selectedCase = ROW_CASES[next];
+        updateCases();
+        tabs.children[next].focus();
+      },
+    }));
+  });
+  allCases.addEventListener("change", updateCases);
+  container.appendChild(el("div", { class: "comparison-controls" }, [
+    tabs, el("label", { class: "view-toggle", for: "allCases" }, [allCases, "All cases"]),
+  ]));
+  container.appendChild(results);
   window.requestAnimationFrame(syncCompareCellSizeToCssVars);
 }
 
@@ -471,14 +504,12 @@ function imageNode(src, label, options = {}) {
   });
   const wrapper = el("div", { class: "grid-image-wrap" }, [img]);
   wrapper.title = label;
-
-  if (options.syncAspectRatio !== false) {
-    img.addEventListener("load", () => {
-      if (img.naturalWidth && img.naturalHeight) {
-        wrapper.style.aspectRatio = `${img.naturalWidth} / ${img.naturalHeight}`;
-      }
-    });
-  }
+  wrapper.style.setProperty("--media-ratio", String(options.aspectRatio || 16 / 9));
+  img.addEventListener("load", () => {
+    if (img.naturalWidth && img.naturalHeight) {
+      wrapper.style.setProperty("--media-ratio", String(img.naturalWidth / img.naturalHeight));
+    }
+  });
 
   return wrapper;
 }
@@ -530,131 +561,82 @@ function placeholderNode(modality) {
   ]);
 }
 
-function renderExampleRow(original, rowData, orientation = "landscape") {
-  const row = el("tr");
-  const type = rowData.type;
-  const mediaOptions = { syncAspectRatio: false };
-
-  row.appendChild(
-    el("th", {
-      class: "condition-label",
-      scope: "row",
-      text: rowData.label || type,
-    })
-  );
-
-  if (type === "video_audio_image_text" || type === "video_image_text") {
-    row.appendChild(
-      el("td", { class: "example-media-cell input-video-cell" }, [
-        original.video
-          ? mediaNode(original.video, "Input video", true, mediaOptions)
-          : placeholderNode("video"),
+function renderExampleRow(rowData, categoryName, index, mediaOptions) {
+  const condition = rowData.label || rowData.type;
+  const label = CONDITION_LABELS[rowData.type];
+  const row = el("tr", { "data-condition": rowData.type });
+  row.appendChild(el("th", { class: "condition-label", scope: "row" }, [
+    el("span", { class: "condition-heading" }, [
+      el("span", { class: "condition-number", text: `0${index + 1}` }),
+      el("span", { class: "condition-title", text: label?.title || condition }),
+    ]),
+    el("span", { class: "condition-name" }, label ? label.modalities.map((modality, index) =>
+      el("span", { class: "condition-term" }, [
+        index ? el("span", { class: "condition-join", text: "+ " }) : null,
+        el("abbr", { text: modality[0], title: modality }),
       ])
-    );
-  } else {
-    row.appendChild(
-      el("td", { class: "example-media-cell input-video-cell" }, [
-        placeholderNode("video"),
-      ])
-    );
-  }
-
-  row.appendChild(
-    el("td", { class: "example-media-cell input-image-cell" }, [
-      original.image
-        ? imageNode(original.image, "Input image", { syncAspectRatio: false })
-        : placeholderNode("image"),
-    ])
-  );
-
-  if (type === "video_audio_image_text" || type === "audio_image_text") {
-    row.appendChild(
-      el("td", { class: "example-media-cell input-audio-cell" }, [
-        original.audio
-          ? audioNode(original.audio, "Input audio")
-          : placeholderNode("audio"),
-      ])
-    );
-  } else {
-    row.appendChild(
-      el("td", { class: "example-media-cell input-audio-cell" }, [
-        placeholderNode("audio"),
-      ])
-    );
-  }
-
-  row.appendChild(
-    el("td", { class: "example-media-cell input-text-cell" }, [
-      textNode(original.text || ""),
-    ])
-  );
-  row.appendChild(
-    el("td", { class: "example-media-cell output-cell" }, [
-      rowData.output?.bgm
-        ? mediaNode(rowData.output.bgm, "Ours BGM", true, mediaOptions)
+    ) : []),
+  ]));
+  for (const [key, label] of [["bgm", "Ours (BGM)"], ["vocal", "Ours (Vocal)"]]) {
+    row.appendChild(el("td", { class: "example-media-cell output-cell", "data-label": label }, [
+      rowData.output?.[key]
+        ? mediaNode(rowData.output[key], `${categoryName}: ${condition}, ${label}`, true, mediaOptions)
         : placeholderNode("video"),
-    ])
-  );
-  row.appendChild(
-    el("td", { class: "example-media-cell output-cell" }, [
-      rowData.output?.vocal
-        ? mediaNode(rowData.output.vocal, "Ours Vocal", true, mediaOptions)
-        : placeholderNode("video"),
-    ])
-  );
-
+    ]));
+  }
   return row;
 }
 
 function renderCategory(category) {
-  const orientation = category.orientation || "landscape";
+  const original = category.original || {};
+  const categoryName = category.name || "Category";
+  const mediaOptions = {
+    poster: original.image,
+    aspectRatio: category.orientation === "portrait" ? 9 / 16 : 16 / 9,
+  };
   const section = el("section", {
-    class: `paper-card example-category ${orientation}`,
+    class: `example-category ${category.orientation || "landscape"}`,
     id: `example-${category.id || "category"}`,
+    "aria-labelledby": `category-title-${category.id}`,
   });
-
   section.appendChild(
-    el("h2", { class: "category-title", text: category.name || "Category" })
+    el("h3", { class: "category-title", id: `category-title-${category.id}`, text: categoryName })
   );
-  section.appendChild(
-    el("h4", { class: "category-subtitle", text: "Multimodal Condition Study" })
-  );
+  section.appendChild(el("p", { class: "category-subtitle", text: "Multimodal input conditions" }));
+  const inputs = [
+    ["Input video", original.video ? mediaNode(original.video, `${categoryName}: Input video`, true, mediaOptions) : placeholderNode("video")],
+    ["Input image", original.image ? imageNode(original.image, `${categoryName}: Input image`, mediaOptions) : placeholderNode("image")],
+    ["Input audio", original.audio ? audioNode(original.audio, `${categoryName}: Input audio`) : placeholderNode("audio")],
+    ["Input text", textNode(original.text || "")],
+  ];
+  section.appendChild(el("div", { class: "source-inputs", role: "group", "aria-label": `${categoryName} source inputs` },
+    inputs.map(([label, media]) => el("div", { class: "source-input" }, [
+      el("h4", { text: label }),
+      el("div", { class: "source-media" }, [media]),
+    ]))
+  ));
 
-  const tableScroll = el("div", { class: "table-scroll" });
-  const table = el("table", {
-    class: "comparison-table examples-table",
+  const tableScroll = el("div", {
+    class: "table-scroll", tabindex: "0", role: "region",
+    "aria-label": `${categoryName} input conditions and outputs`,
   });
-  table.appendChild(
-    el("caption", {
-      text: `${category.name || "Category"} results under four input conditions.`,
-    })
-  );
-
+  const table = el("table", { class: "comparison-table examples-table" });
+  table.appendChild(el("caption", {
+    class: "sr-only", text: `${categoryName} results under four input conditions.`,
+  }));
   const headerRow = el("tr");
   [
-    ["Condition", "condition-head"],
-    ["Input Video", ""],
-    ["Input Image", ""],
-    ["Input Audio", ""],
-    ["Input Text", ""],
+    ["Input condition", "condition-head"],
     ["Ours (BGM)", "method-ours"],
     ["Ours (Vocal)", "method-ours"],
   ].forEach(([label, className]) => {
-    headerRow.appendChild(
-      el("th", { class: className, scope: "col", text: label })
-    );
+    headerRow.appendChild(el("th", { class: className, scope: "col", text: label }));
   });
   table.appendChild(el("thead", {}, [headerRow]));
-
   const body = el("tbody");
-  const sortedRows = (category.rows || [])
-    .slice()
+  const sortedRows = (category.rows || []).slice()
     .sort((a, b) => ROW_ORDER.indexOf(a.type) - ROW_ORDER.indexOf(b.type));
-
-  sortedRows.forEach((rowData) => {
-    body.appendChild(renderExampleRow(category.original || {}, rowData, orientation));
-  });
-
+  sortedRows.forEach((rowData, index) => body.appendChild(renderExampleRow(rowData, categoryName, index, mediaOptions)));
   table.appendChild(body);
   tableScroll.appendChild(table);
   section.appendChild(tableScroll);
@@ -789,15 +771,11 @@ async function renderExampleGallery(
         el("div", { class: "section-head" }, [
           el("h2", {
             class: "page-title",
-            text: data.title || "More Results",
-          }),
-          el("h4", {
-            class: "section-kicker",
-            text: "Multimodal Condition Studies",
+            text: "Multimodal Generation Examples",
           }),
           el("p", {
             class: "page-subtitle",
-            text: "Each category compares the same source under four available-modality conditions.",
+            text: "Results under different input conditions",
           }),
         ]),
       ])
@@ -817,6 +795,9 @@ async function renderExampleGallery(
       return;
     }
 
+    container.appendChild(el("nav", { class: "category-nav", "aria-label": "Scene categories" },
+      categories.map((category) => el("a", { href: `#example-${category.id}`, text: category.name }))
+    ));
     mountExampleBatches(container, categories, generation);
   } catch (error) {
     if (generation !== exampleRenderState.generation) return;
@@ -831,6 +812,10 @@ async function renderExampleGallery(
         el("p", {
           class: "examples-placeholder-copy",
           text: "The examples could not be loaded.",
+        }),
+        el("button", {
+          type: "button", class: "text-link", text: "Retry",
+          onclick: () => renderExampleGallery(container),
         }),
       ])
     );
@@ -899,8 +884,18 @@ function initAbstractToggle() {
   const text = document.getElementById("abstractText");
   const button = document.getElementById("abstractToggle");
   if (!text || !button) return;
-  text.classList.remove("is-collapsed");
-  button.hidden = true;
+  const compact = window.matchMedia("(max-width: 640px)");
+  let expanded = false;
+  const update = () => {
+    const collapsed = compact.matches && !expanded;
+    text.classList.toggle("is-collapsed", collapsed);
+    button.hidden = !compact.matches;
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.textContent = collapsed ? "Read full abstract" : "Show less";
+  };
+  button.addEventListener("click", () => { expanded = !expanded; update(); });
+  compact.addEventListener("change", update);
+  update();
 }
 
 function init() {

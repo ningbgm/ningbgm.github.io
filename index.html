@@ -3,7 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
-    <meta name="theme-color" content="#fcfcfc" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
     <meta
       name="description"
       content="Anonymous review demo for NingBGM video background music generation."
@@ -14,29 +16,24 @@
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='6' fill='%23263c4c'/%3E%3Cpath d='M17 47V17h7l16 20V17h7v30h-7L24 27v20z' fill='white'/%3E%3C/svg%3E"
     />
     <link rel="stylesheet" href="./web/styles.css" />
+    <link rel="stylesheet" href="./web/theme.css" />
   </head>
   <body>
     <a class="skip-link" href="#content">Skip to main content</a>
 
     <main id="content" class="page-shell">
       <article class="project-page">
-        <section id="overview" class="paper-card paper-overview" aria-labelledby="project-title">
+        <section id="overview" class="paper-overview" aria-labelledby="project-title">
           <header class="paper-header">
-            <p class="submission-note">Anonymous review demo · ACM MM 2026 submission</p>
-            <h1 id="project-title">
-              NingBGM: Video Background Music Generation via Holistic Scene
-              Understanding with Multi-Agent Collaboration
-            </h1>
+            <h1 id="project-title"><strong>NingBGM:</strong> Video Background Music Generation via
+              Holistic Scene Understanding with Multi-Agent Collaboration</h1>
 
             <nav class="paper-links" aria-label="Project sections">
-              <span>[<a href="#TB">Comparison Results</a>]</span>
-              <span>[<a href="#Examples">More Results</a>]</span>
-              <span>[<a href="#Disclaimer">Review Notes</a>]</span>
-              <span>[<button id="reloadBtn" type="button">Reload Demo</button>]</span>
+              <a href="#abstract-title">[Abstract]</a>
+              <a href="#TB">[Comparisons]</a>
+              <a href="#Examples">[Examples]</a>
             </nav>
-
-            <p class="authors">Anonymous submission</p>
-            <p id="status" class="status" role="status" aria-live="polite"></p>
+            <p class="authors">Anonymous authors</p>
           </header>
 
           <section class="abstract-block" aria-labelledby="abstract-title">
@@ -67,43 +64,21 @@
               confirm that constructing holistic scenes through multimodal fusion is
               crucial for enhancing audio-visual synchronization.
             </p>
-            <button id="abstractToggle" class="text-link" type="button" hidden>
+            <button id="abstractToggle" class="text-link" type="button" aria-controls="abstractText" aria-expanded="false" hidden>
               Read full abstract
             </button>
           </section>
 
-          <section class="overview-figure" aria-labelledby="overview-figure-title">
-            <h2 id="overview-figure-title">Demo Overview</h2>
-            <figure>
-              <img
-                src="./demo_io/demo_example/demo_original/technology/technology_10.jpg"
-                alt="Representative technology input frame from the NingBGM demonstration"
-                width="1280"
-                height="720"
-                fetchpriority="high"
-              />
-              <figcaption>Representative input scene used in the NingBGM demonstration.</figcaption>
-            </figure>
-          </section>
-
-          <nav class="paper-index" aria-label="Experiment index">
-            <section aria-labelledby="experiments-title">
-              <h2 id="experiments-title">Experiments</h2>
-              <ul>
-                <li><a href="#TB">Comparison with other methods</a></li>
-                <li><a href="#Examples">Multimodal condition studies and more results</a></li>
-              </ul>
-            </section>
-            <section aria-labelledby="discussion-title">
-              <h2 id="discussion-title">Discussion</h2>
-              <ul>
-                <li><a href="#Disclaimer">Anonymous review notice and usage statement</a></li>
-              </ul>
-            </section>
+          <nav class="experiment-index" aria-label="Experiments">
+            <h2>Experiments</h2>
+            <ul>
+              <li><a href="#TB">Video-to-music generation: comparison with other methods</a></li>
+              <li><a href="#Examples">Multimodal generation under different input conditions</a></li>
+            </ul>
           </nav>
         </section>
 
-        <section id="TB" class="paper-card experiment-card" aria-label="Model comparison">
+        <section id="TB" class="experiment-card" aria-label="Model comparison">
           <div id="tbCompare"></div>
         </section>
 
@@ -111,8 +86,8 @@
           <div id="videoGallery"></div>
         </section>
 
-        <section id="Disclaimer" class="paper-card disclaimer-card" aria-labelledby="notice-title">
-          <h2 id="notice-title">Disclaimer</h2>
+        <section id="Disclaimer" class="disclaimer-card" aria-labelledby="notice-title">
+          <h2 id="notice-title">Research notes</h2>
           <div class="disclaimer-copy">
             <p>
               <strong>Academic use.</strong> The model outputs and comparison materials
@@ -121,25 +96,23 @@
             </p>
             <p>
               <strong>Anonymity.</strong> Repository addresses, source-code links,
-              author names, organization names, personal accounts, and contact
-              information are withheld to preserve double-blind review.
+              author names, affiliations, and contact information are omitted
+              from this demonstration.
             </p>
             <p>
               <strong>Media materials.</strong> Original videos, images, audio clips,
-              and related media are used as research examples for review. Visible
-              captions have been anonymized to remove social handles, source links,
-              and unnecessary references.
-            </p>
-            <p>
-              <strong>Release notes.</strong> Formal citation, source-code release,
-              and additional project resources are intentionally omitted during
-              review and can be added after the review process when appropriate.
+              and related media are research examples. Descriptions refer only
+              to scene content. All rights remain with their respective owners.
             </p>
           </div>
-          <p class="back-link">[<a href="#overview">Back to overview</a>]</p>
+          <p class="back-link"><a href="#overview">Back to top &#8593;</a></p>
         </section>
       </article>
     </main>
+
+    <footer class="site-footer"><span>NingBGM</span><span>Anonymous research demonstration</span></footer>
+    <p id="status" class="status sr-only" role="status" aria-live="polite"></p>
+    <noscript><p class="noscript-note">JavaScript is required to load the comparison videos and examples.</p></noscript>
 
     <script type="module" src="./web/app.js"></script>
   </body>
