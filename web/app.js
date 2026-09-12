@@ -40,7 +40,6 @@ const CONDITION_LABELS = {
   audio_image_text: { title: "Without video", modalities: ["Audio", "Image", "Text"] },
   image_text: { title: "Image and text", modalities: ["Image", "Text"] },
 };
-const EXAMPLES_BATCH_SIZE = 10;
 const MAX_CONCURRENT_PREFETCH = 2;
 
 const PLACEHOLDER_LABELS = {
@@ -56,9 +55,7 @@ const loadedVideoUrls = new Set();
 const lazyVideoLoaders = new WeakMap();
 const exampleRenderState = {
   triggerObserver: null,
-  batchObserver: null,
-  sentinel: null,
-  nextBatchQueued: false,
+  selectFromHash: null,
   loading: false,
   loaded: false,
   generation: 0,
@@ -126,15 +123,6 @@ function disconnectExampleObservers() {
     exampleRenderState.triggerObserver.disconnect();
     exampleRenderState.triggerObserver = null;
   }
-  if (exampleRenderState.batchObserver) {
-    exampleRenderState.batchObserver.disconnect();
-    exampleRenderState.batchObserver = null;
-  }
-  if (exampleRenderState.sentinel) {
-    exampleRenderState.sentinel.remove();
-    exampleRenderState.sentinel = null;
-  }
-  exampleRenderState.nextBatchQueued = false;
 }
 
 function resetRuntimeState() {
@@ -149,6 +137,7 @@ function resetRuntimeState() {
   loadedVideoUrls.clear();
   activePrefetchCount = 0;
   disconnectExampleObservers();
+  exampleRenderState.selectFromHash = null;
   exampleRenderState.loading = false;
   exampleRenderState.loaded = false;
   setStatus("");
@@ -604,10 +593,10 @@ function renderCategory(category) {
   );
   section.appendChild(el("p", { class: "category-subtitle", text: "Multimodal input conditions" }));
   const inputs = [
-    ["Input video", original.video ? mediaNode(original.video, `${categoryName}: Input video`, true, mediaOptions) : placeholderNode("video")],
-    ["Input image", original.image ? imageNode(original.image, `${categoryName}: Input image`, mediaOptions) : placeholderNode("image")],
-    ["Input audio", original.audio ? audioNode(original.audio, `${categoryName}: Input audio`) : placeholderNode("audio")],
     ["Input text", textNode(original.text || "")],
+    ["Input audio", original.audio ? audioNode(original.audio, `${categoryName}: Input audio`) : placeholderNode("audio")],
+    ["Input image", original.image ? imageNode(original.image, `${categoryName}: Input image`, mediaOptions) : placeholderNode("image")],
+    ["Input video", original.video ? mediaNode(original.video, `${categoryName}: Input video`, true, mediaOptions) : placeholderNode("video")],
   ];
   section.appendChild(el("div", { class: "source-inputs", role: "group", "aria-label": `${categoryName} source inputs` },
     inputs.map(([label, media]) => el("div", { class: "source-input" }, [
@@ -653,93 +642,82 @@ function sortCategories(categories) {
   });
 }
 
-function queueExampleBatchRender(renderNextBatch, generation) {
-  if (
-    generation !== exampleRenderState.generation ||
-    exampleRenderState.nextBatchQueued
-  ) {
-    return;
-  }
-  exampleRenderState.nextBatchQueued = true;
-  scheduleLowPriorityWork(() => {
-    if (generation !== exampleRenderState.generation) return;
-    exampleRenderState.nextBatchQueued = false;
-    renderNextBatch();
+function mountExampleTabs(container, categories, generation) {
+  const tabs = el("div", {
+    id: "category-tabs", class: "case-tabs category-tabs", role: "tablist",
+    "aria-label": "Scene categories",
   });
+  const results = el("div", { id: "example-results" });
+  const panels = categories.map((category) => {
+    const panel = renderCategory(category);
+    panel.hidden = true;
+    panel.setAttribute("role", "tabpanel");
+    panel.setAttribute("aria-labelledby", `category-tab-${category.id}`);
+    panel.tabIndex = 0;
+    results.appendChild(panel);
+    return panel;
+  });
+  let selectedIndex = -1;
+  const selectCategory = (categoryId, updateHash = false) => {
+    if (generation !== exampleRenderState.generation) return;
+    const index = Math.max(0, categories.findIndex((category) => category.id === categoryId));
+    if (selectedIndex !== -1 && selectedIndex !== index) pauseOtherMedia(null);
+    selectedIndex = index;
+    panels.forEach((panel, panelIndex) => { panel.hidden = panelIndex !== index; });
+    [...tabs.children].forEach((button, buttonIndex) => {
+      const selected = buttonIndex === index;
+      button.setAttribute("aria-selected", String(selected));
+      button.tabIndex = selected ? 0 : -1;
+    });
+    if (updateHash) {
+      window.history.replaceState(window.history.state, "", `#example-${categories[index].id}`);
+    }
+  };
+  categories.forEach((category, index) => {
+    tabs.appendChild(el("button", {
+      type: "button", role: "tab", text: category.name,
+      id: `category-tab-${category.id}`, "aria-controls": `example-${category.id}`,
+      "aria-selected": "false", tabindex: "-1",
+      onclick: () => selectCategory(category.id, true),
+      onkeydown: (event) => {
+        let next = index;
+        if (event.key === "ArrowRight") next = (index + 1) % categories.length;
+        else if (event.key === "ArrowLeft") next = (index + categories.length - 1) % categories.length;
+        else if (event.key === "Home") next = 0;
+        else if (event.key === "End") next = categories.length - 1;
+        else return;
+        event.preventDefault();
+        selectCategory(categories[next].id, true);
+        tabs.children[next].focus();
+      },
+    }));
+  });
+  container.append(tabs, results);
+  exampleRenderState.selectFromHash = () => {
+    const hash = window.location.hash;
+    selectCategory(hash.slice("#example-".length));
+    window.requestAnimationFrame(() => {
+      if (generation === exampleRenderState.generation && window.location.hash === hash) {
+        tabs.scrollIntoView({ block: "start", behavior: "instant" });
+      }
+    });
+  };
+  if (window.location.hash.startsWith("#example-")) {
+    exampleRenderState.selectFromHash();
+  } else {
+    selectCategory(categories[0].id);
+  }
+  exampleRenderState.loaded = true;
+  setStatus("");
 }
 
-function mountExampleBatches(container, categories, generation) {
-  disconnectExampleObservers();
-
-  let index = 0;
-  const total = categories.length;
-  const sentinel = el("div", {
-    class: "examples-sentinel",
-    "aria-hidden": "true",
-  });
-
-  const renderNextBatch = () => {
-    if (
-      generation !== exampleRenderState.generation ||
-      !sentinel.isConnected ||
-      sentinel.parentNode !== container ||
-      index >= total
-    ) {
-      return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    const end = Math.min(index + EXAMPLES_BATCH_SIZE, total);
-
-    while (index < end) {
-      fragment.appendChild(renderCategory(categories[index]));
-      index += 1;
-    }
-
-    container.insertBefore(fragment, sentinel);
-
-    if (index >= total) {
-      sentinel.remove();
-      if (exampleRenderState.batchObserver) {
-        exampleRenderState.batchObserver.disconnect();
-        exampleRenderState.batchObserver = null;
-      }
-      exampleRenderState.sentinel = null;
-      exampleRenderState.loaded = true;
-      setStatus("");
-      return;
-    }
-
-    setStatus(`Examples rendered: ${index}/${total}`);
-  };
-
-  container.appendChild(sentinel);
-  exampleRenderState.sentinel = sentinel;
-  renderNextBatch();
-
-  if (index >= total) return;
-
-  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
-    exampleRenderState.batchObserver = new IntersectionObserver(
-      (entries) => {
-        if (
-          generation === exampleRenderState.generation &&
-          entries.some((entry) => entry.isIntersecting)
-        ) {
-          queueExampleBatchRender(renderNextBatch, generation);
-        }
-      },
-      { rootMargin: "280px" }
-    );
-    exampleRenderState.batchObserver.observe(sentinel);
+function handleExampleHashNavigation() {
+  if (!window.location.hash.startsWith("#example-")) return;
+  if (exampleRenderState.selectFromHash) {
+    exampleRenderState.selectFromHash();
   } else {
-    const renderRemainingBatches = () => {
-      renderNextBatch();
-      if (index < total) {
-        queueExampleBatchRender(renderRemainingBatches, generation);
-      }
-    };
-    queueExampleBatchRender(renderRemainingBatches, generation);
+    const container = document.getElementById("videoGallery");
+    if (container) renderExampleGallery(container);
   }
 }
 
@@ -756,6 +734,7 @@ async function renderExampleGallery(
   }
 
   exampleRenderState.loading = true;
+  disconnectExampleObservers();
   container.innerHTML = "";
   setStatus("Loading examples...");
 
@@ -795,10 +774,7 @@ async function renderExampleGallery(
       return;
     }
 
-    container.appendChild(el("nav", { class: "category-nav", "aria-label": "Scene categories" },
-      categories.map((category) => el("a", { href: `#example-${category.id}`, text: category.name }))
-    ));
-    mountExampleBatches(container, categories, generation);
+    mountExampleTabs(container, categories, generation);
   } catch (error) {
     if (generation !== exampleRenderState.generation) return;
     console.error(error);
@@ -849,7 +825,10 @@ function setupDeferredExampleGallery(
     ])
   );
 
-  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
+  // A direct category link must load even while the gallery is below the viewport.
+  if (window.location.hash.startsWith("#example-")) {
+    renderExampleGallery(galleryEl, generation);
+  } else if (typeof window !== "undefined" && "IntersectionObserver" in window) {
     exampleRenderState.triggerObserver = new IntersectionObserver(
       (entries) => {
         if (
@@ -905,6 +884,7 @@ function init() {
   }
 
   initAbstractToggle();
+  window.addEventListener("hashchange", handleExampleHashNavigation);
   renderAll();
 }
 

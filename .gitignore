@@ -6,6 +6,11 @@
 /.ui-review/
 /Image/
 
+# Local agent settings and execution notes
+/.codex/
+/.agents/
+/todolist_memo/
+
 # Raw captions are not used by the page or publication build
 /demo_io/demo_example/demo_original/**/*.txt
 
@@ -13,6 +18,8 @@
 node_modules/
 /playwright-report/
 /test-results/
+__pycache__/
+*.py[cod]
 
 # Local environment settings (keep shareable examples)
 .env
