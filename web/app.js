@@ -1,6 +1,12 @@
 const EXAMPLE_MP4_URL = new URL("./data/example_mp4.json", import.meta.url).href;
 
-const ROW_CASES = ["1", "2", "3", "4", "5"];
+const COMPARE_CASES = [
+  { displayId: "1", mediaId: "4" },
+  { displayId: "2", mediaId: "5" },
+  { displayId: "3", mediaId: "1" },
+  { displayId: "4", mediaId: "2" },
+  { displayId: "5", mediaId: "3" },
+];
 // Measured source proportions reserve space before lazy videos load.
 const CASE_ASPECT_RATIOS = { "1": 3 / 4, "2": 1, "3": 3 / 4, "4": 3 / 4, "5": 3 / 4 };
 const COL_MODELS = [
@@ -371,14 +377,14 @@ function renderCompareMatrix(container) {
   );
 
   const results = el("div", { id: "comparison-results" });
-  ROW_CASES.forEach((caseId) => {
+  COMPARE_CASES.forEach(({ displayId, mediaId }) => {
     const panel = el("section", {
-      class: "comparison-case", id: `comparison-case-${caseId}`,
-      "data-case": caseId, role: "tabpanel",
-      "aria-labelledby": `case-tab-${caseId}`, tabindex: "0",
+      class: "comparison-case", id: `comparison-case-${displayId}`,
+      "data-case": displayId, role: "tabpanel",
+      "aria-labelledby": `case-tab-${displayId}`, tabindex: "0",
     });
-    panel.hidden = caseId !== ROW_CASES[0];
-    const title = el("h3", { class: "case-title", text: `Case ${caseId}` });
+    panel.hidden = displayId !== COMPARE_CASES[0].displayId;
+    const title = el("h3", { class: "case-title", text: `Case ${displayId}` });
     title.hidden = true;
     panel.appendChild(title);
     panel.appendChild(el("div", { class: "method-grid" }, COL_MODELS.map((model) => {
@@ -388,16 +394,16 @@ function renderCompareMatrix(container) {
         "data-model": model,
       }, [
         el("figcaption", { text: label }),
-        mediaNode(getCompareVideoPath(model, caseId), `Case ${caseId}: ${label}`, true, {
-          poster: `web/posters/case-${caseId}.jpg`,
-          aspectRatio: CASE_ASPECT_RATIOS[caseId],
+        mediaNode(getCompareVideoPath(model, mediaId), `Case ${displayId}: ${label}`, true, {
+          poster: `web/posters/case-${mediaId}.jpg`,
+          aspectRatio: CASE_ASPECT_RATIOS[mediaId],
         }),
       ]);
     })));
     results.appendChild(panel);
   });
 
-  let selectedCase = ROW_CASES[0];
+  let selectedCase = COMPARE_CASES[0].displayId;
   const tabs = el("div", { class: "case-tabs", role: "tablist", "aria-label": "Comparison case" });
   const allCases = el("input", { type: "checkbox", id: "allCases" });
   const updateCases = () => {
@@ -418,23 +424,23 @@ function renderCompareMatrix(container) {
     });
     window.requestAnimationFrame(syncCompareCellSizeToCssVars);
   };
-  ROW_CASES.forEach((caseId, index) => {
+  COMPARE_CASES.forEach(({ displayId }, index) => {
     tabs.appendChild(el("button", {
-      type: "button", role: "tab", text: `Case ${caseId}`, "data-case": caseId,
-      id: `case-tab-${caseId}`,
+      type: "button", role: "tab", text: `Case ${displayId}`, "data-case": displayId,
+      id: `case-tab-${displayId}`,
       "aria-selected": String(index === 0),
-      "aria-controls": `comparison-case-${caseId}`,
+      "aria-controls": `comparison-case-${displayId}`,
       tabindex: index === 0 ? "0" : "-1",
-      onclick: () => { selectedCase = caseId; updateCases(); },
+      onclick: () => { selectedCase = displayId; updateCases(); },
       onkeydown: (event) => {
         let next = index;
-        if (event.key === "ArrowRight") next = (index + 1) % ROW_CASES.length;
-        else if (event.key === "ArrowLeft") next = (index + ROW_CASES.length - 1) % ROW_CASES.length;
+        if (event.key === "ArrowRight") next = (index + 1) % COMPARE_CASES.length;
+        else if (event.key === "ArrowLeft") next = (index + COMPARE_CASES.length - 1) % COMPARE_CASES.length;
         else if (event.key === "Home") next = 0;
-        else if (event.key === "End") next = ROW_CASES.length - 1;
+        else if (event.key === "End") next = COMPARE_CASES.length - 1;
         else return;
         event.preventDefault();
-        selectedCase = ROW_CASES[next];
+        selectedCase = COMPARE_CASES[next].displayId;
         updateCases();
         tabs.children[next].focus();
       },
@@ -633,9 +639,15 @@ function renderCategory(category) {
 }
 
 function sortCategories(categories) {
+  const preferredIds = ["scene", "sport", "live"];
   return (categories || []).slice().sort((a, b) => {
+    const preferredIndexA = preferredIds.indexOf(a.id);
+    const preferredIndexB = preferredIds.indexOf(b.id);
+    if (preferredIndexA !== -1 || preferredIndexB !== -1) {
+      return (preferredIndexA === -1 ? preferredIds.length : preferredIndexA)
+        - (preferredIndexB === -1 ? preferredIds.length : preferredIndexB);
+    }
     const weight = (category) => {
-      if (category.id === "live") return 999;
       return (category.orientation || "landscape") === "portrait" ? 0 : 1;
     };
     return weight(a) - weight(b);

@@ -8,6 +8,8 @@ const previewUrl = process.env.PREVIEW_URL || "http://127.0.0.1:4173";
 const output = resolve(process.env.UI_EVIDENCE_DIR || join(__dirname, "../.ui-review/screenshots"));
 const visibleCases = ".comparison-case:not([hidden])";
 const visibleCategories = ".example-category:not([hidden])";
+const projectTitle = "NingBGM: Multimodal Scene Understanding for Collaborative Video-to-Music Generation";
+const expectedAbstract = "Video-to-music generation requires coherent musical conditions derived from scene content, affect, and context. We present NingBGM, a framework that translates multimodal scene evidence into conditions for collaborative music generation. The framework integrates video with available audio, images, and text into time-ordered scene records. Profile-guided experts develop a shared musical blueprint from these records, with consistency checks guiding revision before synthesis. We evaluated NingBGM using seven automatic metrics and a 20-participant listening study. On CSD-200, NingBGM-BGM led four automatic metrics and all three applicable mean listening scores. On TB-Match, it led generated systems in all three semantic-similarity metrics and mean listening scores. These results support scene-guided planning for thematically suitable music, with performance varying across quality dimensions.";
 
 async function assertSelectedCategory(page, id, focused = false) {
   const panel = page.locator(visibleCategories);
@@ -105,7 +107,10 @@ async function assertLayout(page, width) {
       if (response.status() >= 400) errors.push(`${response.status()}: ${response.url()}`);
     });
     await page.goto(previewUrl, { waitUntil: "networkidle" });
-    assert.equal(await page.title(), "NingBGM | Anonymous Review Demo");
+    assert.equal(await page.title(), projectTitle);
+    assert.equal((await page.locator("#project-title").textContent()).replace(/\s+/g, " ").trim(), projectTitle);
+    assert.equal((await page.locator("#abstractText").textContent()).replace(/\s+/g, " ").trim(), expectedAbstract);
+    assert.equal(await page.locator('meta[name="description"]').getAttribute("content"), expectedAbstract);
     assert.equal(await page.locator("#abstractToggle").isVisible(), false);
     assert.equal(await page.locator("#abstractText").evaluate((node) => node.scrollHeight <= node.clientHeight + 1), true);
     await assertLayout(page, 1440);
@@ -114,6 +119,9 @@ async function assertLayout(page, width) {
     await scrollTo(page, "#TB");
     await readyVideo(page, "#comparison-case-1 video");
     assert.equal(await page.locator(visibleCases).count(), 1);
+    assert.equal(await page.locator(visibleCases).getAttribute("data-case"), "1");
+    assert.deepEqual(await page.getByRole("tablist", { name: "Comparison case" }).getByRole("tab").allTextContents(),
+      ["Case 1", "Case 2", "Case 3", "Case 4", "Case 5"]);
     assert.equal(await page.locator(`${visibleCases} .method-result`).count(), 8);
     await page.getByRole("tab", { name: "Case 3" }).click();
     assert.equal(await page.locator(visibleCases).getAttribute("data-case"), "3");
@@ -144,6 +152,29 @@ async function assertLayout(page, width) {
       await readyVideo(page, `#comparison-case-${id} video`);
       await page.locator(`#comparison-case-${id} .method-result`).last().scrollIntoViewIfNeeded();
       await page.waitForFunction((id) => document.querySelectorAll(`#comparison-case-${id} video`).length === 8, id);
+      await page.waitForFunction((id) => [...document.querySelectorAll(`#comparison-case-${id} video`)]
+        .every(video => video.readyState >= 2 && video.videoWidth > 0), id);
+      const mediaId = [4, 5, 1, 2, 3][id - 1];
+      const actualMedia = await page.locator(`#comparison-case-${id} .method-result`).evaluateAll(figures => figures.map(figure => {
+        const video = figure.querySelector("video");
+        return {
+          model: figure.dataset.model,
+          path: new URL(video.src).pathname,
+          poster: new URL(video.poster).pathname,
+          label: video.getAttribute("aria-label"),
+          ratio: Number(video.parentElement.style.getPropertyValue("--media-ratio")),
+        };
+      }));
+      assert.deepEqual(actualMedia.map(media => media.model), ["GroundTruth", "Ours", "CMT", "Diff_bgm", "GVMGen", "M2UGen", "VeM", "VidMuse"]);
+      for (const media of actualMedia) {
+        const file = media.model === "Ours"
+          ? ["1_bgm.mp4", "2_bgm_2.mp4", "3_bgm_2.mp4", "4_bgm.mp4", "5_bgm.mp4"][mediaId - 1]
+          : `${mediaId}.mp4`;
+        assert.equal(media.path, `/demo_io/demo_compare/${media.model}/${mediaId}/${file}`);
+        assert.equal(media.poster, `/web/posters/case-${mediaId}.jpg`);
+        assert.ok(media.label.startsWith(`Case ${id}: `));
+        assert.equal(media.ratio, mediaId === 2 ? 1 : 3 / 4);
+      }
     }
     const comparePaths = await page.locator("#comparison-results video").evaluateAll((videos) => videos.map((video) => new URL(video.src).pathname));
     assert.equal(new Set(comparePaths).size, 40);
@@ -154,15 +185,22 @@ async function assertLayout(page, width) {
     assert.equal(await page.locator(".examples-table tbody tr").count(), 40);
     assert.equal(await page.getByRole("tablist", { name: "Scene categories" }).getByRole("tab").count(), 10);
     assert.equal(await page.locator(".source-inputs .source-input").count(), 40);
-    await assertSelectedCategory(page, "beauty");
-    await page.locator("#category-tab-beauty").press("ArrowLeft");
+    assert.deepEqual(await page.locator("#category-tabs [role=tab]").evaluateAll(tabs => tabs.map(tab => tab.id)),
+      ["scene", "sport", "live", "beauty", "food", "pet", "skill", "car", "knowledge", "technology"].map(id => `category-tab-${id}`));
+    assert.deepEqual((await page.locator("#category-tabs [role=tab]").allTextContents()).slice(0, 3), ["Scenery", "Sports", "Life"]);
+    await assertSelectedCategory(page, "scene");
+    await page.locator("#category-tab-scene").press("ArrowLeft");
+    await assertSelectedCategory(page, "technology", true);
+    await page.locator("#category-tab-technology").press("ArrowRight");
+    await assertSelectedCategory(page, "scene", true);
+    await page.locator("#category-tab-scene").press("ArrowRight");
+    await assertSelectedCategory(page, "sport", true);
+    await page.locator("#category-tab-sport").press("ArrowRight");
     await assertSelectedCategory(page, "live", true);
-    await page.locator("#category-tab-live").press("ArrowRight");
-    await assertSelectedCategory(page, "beauty", true);
-    await page.locator("#category-tab-beauty").press("End");
-    await assertSelectedCategory(page, "live", true);
-    await page.locator("#category-tab-live").press("Home");
-    await assertSelectedCategory(page, "beauty", true);
+    await page.locator("#category-tab-live").press("End");
+    await assertSelectedCategory(page, "technology", true);
+    await page.locator("#category-tab-technology").press("Home");
+    await assertSelectedCategory(page, "scene", true);
 
     await scrollTo(page, "#category-tabs");
     const scrollBefore = await page.evaluate(() => scrollY);
@@ -181,6 +219,8 @@ async function assertLayout(page, width) {
       await readyVideo(page, `${selector} .source-inputs video`);
       await page.locator(`${selector} .examples-table tr`).last().scrollIntoViewIfNeeded();
       await page.waitForFunction((selector) => document.querySelectorAll(`${selector} .output-cell video`).length === 8, selector);
+      await page.waitForFunction((selector) => [...document.querySelectorAll(`${selector} .output-cell video`)]
+        .every(video => video.readyState >= 2 && video.videoWidth > 0), selector);
       const paths = await page.locator(`${selector} .output-cell video`).evaluateAll((videos) => videos.map((video) => decodeURI(new URL(video.src).pathname).slice(1)).sort());
       assert.deepEqual(paths, category.rows.flatMap((row) => [row.output.bgm, row.output.vocal]).sort(), `Changed outputs: ${category.id}`);
       assert.equal(await page.locator(`${selector} .grid-text-content`).textContent(), category.original.text);
@@ -274,11 +314,11 @@ async function assertLayout(page, width) {
     await deepLinkPage.waitForFunction(() => !document.getElementById("example-sport").hidden);
     await assertSelectedCategory(deepLinkPage, "sport");
     await deepLinkPage.evaluate(() => { location.hash = "#example-missing"; });
-    await deepLinkPage.waitForFunction(() => !document.getElementById("example-beauty").hidden);
-    await assertSelectedCategory(deepLinkPage, "beauty");
+    await deepLinkPage.waitForFunction(() => !document.getElementById("example-scene").hidden);
+    await assertSelectedCategory(deepLinkPage, "scene");
     await deepLinkPage.goto(new URL("#example-missing", previewUrl).href);
     await deepLinkPage.locator("#category-tabs").waitFor();
-    await assertSelectedCategory(deepLinkPage, "beauty");
+    await assertSelectedCategory(deepLinkPage, "scene");
     await deepLinkPage.setViewportSize({ width: 1440, height: 500 });
     await deepLinkPage.goto(previewUrl, { waitUntil: "networkidle" });
     assert.equal(await deepLinkPage.locator(".example-category").count(), 0, "Gallery should remain deferred above the fold");
